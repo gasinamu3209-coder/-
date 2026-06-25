@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프리미엄 멀티 계산기</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            light: '#4F46E5',
+                            DEFAULT: '#6366F1',
+                            dark: '#4338CA',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        /* 스크롤바 커스텀 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 min-h-screen flex items-center justify-center p-4 transition-colors duration-300">
+
+    <!-- 메인 컨테이너 -->
+    <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-800 transition-all duration-300">
+        
+        <!-- 상단 헤더 & 테마 토글 -->
+        <div class="px-6 py-4 flex items-center justify-between border-b border-slate-100 dark:border-slate-800">
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 ml-2">PREMIUM CALC</span>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <!-- 과학용 모드 토글 -->
+                <button id="scientificToggleBtn" onclick="toggleScientific()" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                    공학용 모드
+                </button>
+                <!-- 테마 버튼 -->
+                <button onclick="toggleTheme()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition" aria-label="테마 전환">
+                    <!-- 해 아이콘 -->
+                    <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+                    <!-- 달 아이콘 -->
+                    <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 디스플레이 영역 -->
+        <div class="p-6 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col justify-end items-end relative min-h-[160px]">
+            <!-- 이전 계산식 표시 -->
+            <div id="formulaDisplay" class="text-right text-sm text-slate-400 dark:text-slate-500 font-medium tracking-wide break-all h-6 mb-1"></div>
+            <!-- 현재 입력값/결과 표시 -->
+            <div class="w-full flex items-center justify-between">
+                <button onclick="copyToClipboard()" class="text-slate-400 hover:text-brand dark:hover:text-brand transition p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" title="결과 복사">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                </button>
+                <div id="mainDisplay" class="text-right text-4xl md:text-5xl font-bold text-slate-800 dark:text-white tracking-tight break-all truncate max-w-[90%]">0</div>
+            </div>
+            
+            <!-- 피드백 메시지 토스트 -->
+            <div id="toastMessage" class="absolute bottom-2 left-6 bg-slate-800 text-white dark:bg-white dark:text-slate-900 text-xs px-3 py-1.5 rounded-lg opacity-0 transition-opacity duration-300 pointer-events-none shadow-md">
+                복사되었습니다!
+            </div>
+        </div>
+
+        <!-- 공학용 버튼 패널 (기본 숨김) -->
+        <div id="scientificPanel" class="hidden grid grid-cols-5 gap-2 px-6 py-3 bg-slate-50 dark:bg-slate-800/40 border-t border-b border-slate-100 dark:border-slate-800 transition-all duration-300">
+            <button onclick="inputSci('sin')" class="sci-btn">sin</button>
+            <button onclick="inputSci('cos')" class="sci-btn">cos</button>
+            <button onclick="inputSci('tan')" class="sci-btn">tan</button>
+            <button onclick="inputSci('log')" class="sci-btn">log</button>
+            <button onclick="inputSci('ln')" class="sci-btn">ln</button>
+            <button onclick="inputSci('π')" class="sci-btn">π</button>
+            <button onclick="inputSci('e')" class="sci-btn">e</button>
+            <button onclick="inputSci('^')" class="sci-btn">xʸ</button>
+            <button onclick="inputSci('√')" class="sci-btn">√</button>
+            <button onclick="inputSci('!')" class="sci-btn">x!</button>
+        </div>
+
+        <!-- 기본 키패드 패널 -->
+        <div class="p-6 grid grid-cols-4 gap-3">
+            <!-- 1행 -->
+            <button onclick="clearAll()" class="btn btn-action">AC</button>
+            <button onclick="deleteLast()" class="btn btn-action">⌫</button>
+            <button onclick="inputOperator('%')" class="btn btn-action">%</button>
+            <button onclick="inputOperator('/')" class="btn btn-operator">÷</button>
+
+            <!-- 2행 -->
+            <button onclick="inputNum('7')" class="btn btn-num">7</button>
+            <button onclick="inputNum('8')" class="btn btn-num">8</button>
+            <button onclick="inputNum('9')" class="btn btn-num">9</button>
+            <button onclick="inputOperator('*')" class="btn btn-operator">×</button>
+
+            <!-- 3행 -->
+            <button onclick="inputNum('4')" class="btn btn-num">4</button>
+            <button onclick="inputNum('5')" class="btn btn-num">5</button>
+            <button onclick="inputNum('6')" class="btn btn-num">6</button>
+            <button onclick="inputOperator('-')" class="btn btn-operator">-</button>
+
+            <!-- 4행 -->
+            <button onclick="inputNum('1')" class="btn btn-num">1</button>
+            <button onclick="inputNum('2')" class="btn btn-num">2</button>
+            <button onclick="inputNum('3')" class="btn btn-num">3</button>
+            <button onclick="inputOperator('+')" class="btn btn-operator">+</button>
+
+            <!-- 5행 -->
+            <button onclick="toggleSign()" class="btn btn-num">+/-</button>
+            <button onclick="inputNum('0')" class="btn btn-num">0</button>
+            <button onclick="inputNum('.')" class="btn btn-num">.</button>
+            <button onclick="calculate()" class="btn bg-brand hover:bg-brand-dark text-white font-bold shadow-lg shadow-indigo-500/30 dark:shadow-indigo-500/10">=</button>
+        </div>
+
+        <!-- 기록(History) 섹션 -->
+        <div class="border-t border-slate-100 dark:border-slate-800">
+            <button onclick="toggleHistory()" class="w-full px-6 py-3 flex items-center justify-between text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                <span>계산 기록</span>
+                <svg id="historyArrow" class="w-4 h-4 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            
+            <div id="historyContainer" class="hidden px-6 pb-6 max-h-48 overflow-y-auto custom-scrollbar space-y-2.5">
+                <div id="noHistory" class="text-xs text-center py-4 text-slate-400 dark:text-slate-500">기록된 계산이 없습니다.</div>
+                <div id="historyList" class="space-y-2"></div>
+                <button id="clearHistoryBtn" onclick="clearHistory()" class="hidden w-full py-1.5 text-xs text-center text-red-500 hover:text-red-600 dark:hover:text-red-400 font-medium hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition">기록 전체 삭제</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 버튼 스타일 정의 (Tailwind 커스텀 스타일 대응) -->
+    <style>
+        .btn {
+            @apply h-14 rounded-2xl text-lg font-semibold flex items-center justify-center transition-all duration-100 active:scale-95;
+        }
+        .btn-num {
+            @apply bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700/80;
+        }
+        .btn-operator {
+            @apply bg-indigo-50 dark:bg-indigo-950/40 text-brand dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50;
+        }
+        .btn-action {
+            @apply bg-slate-100 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700;
+        }
+        .sci-btn {
+            @apply h-10 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-950 hover:text-brand dark:hover:text-indigo-400 transition active:scale-95;
+        }
+    </style>
+
+    <script>
+        // 전역 상태 변수들
+        let currentInput = '0';
+        let previousInput = '';
+        let formula = '';
+        let isCalculated = false;
+        let isSciMode = false;
+        let histories = [];
+
+        const mainDisplay = document.getElementById('mainDisplay');
+        const formulaDisplay = document.getElementById('formulaDisplay');
+        const scientificPanel = document.getElementById('scientificPanel');
+        const scientificToggleBtn = document.getElementById('scientificToggleBtn');
+        const historyContainer = document.getElementById('historyContainer');
+        const historyArrow = document.getElementById('historyArrow');
+        const historyList = document.getElementById('historyList');
+        const noHistory = document.getElementById('noHistory');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+        // 테마 설정 (시스템 테마 감지 및 쿠키 없음 지원)
+        function initTheme() {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('sunIcon').classList.remove('hidden');
+                document.getElementById('moonIcon').classList.add('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('sunIcon').classList.add('hidden');
+                document.getElementById('moonIcon').classList.remove('hidden');
+            }
+        }
+        initTheme();
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            const sunIcon = document.getElementById('sunIcon');
+            const moonIcon = document.getElementById('moonIcon');
+            if (isDark) {
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+            } else {
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            }
+        }
+
+        // 공학용 모드 토글
+        function toggleScientific() {
+            isSciMode = !isSciMode;
+            if (isSciMode) {
+                scientificPanel.classList.remove('hidden');
+                scientificToggleBtn.classList.add('bg-brand', 'text-white', 'dark:bg-brand');
+                scientificToggleBtn.classList.remove('bg-slate-100', 'text-slate-600', 'dark:bg-slate-800');
+            } else {
+                scientificPanel.classList.add('hidden');
+                scientificToggleBtn.classList.remove('bg-brand', 'text-white', 'dark:bg-brand');
+                scientificToggleBtn.classList.add('bg-slate-100', 'text-slate-600', 'dark:bg-slate-800');
+            }
+        }
+
+        // 숫자 입력
+        function inputNum(num) {
+            if (isCalculated) {
+                currentInput = num === '.' ? '0.' : num;
+                isCalculated = false;
+            } else {
+                if (num === '.') {
+                    if (currentInput.includes('.')) return;
+                    if (currentInput === '') currentInput = '0';
+                }
+                if (currentInput === '0' && num !== '.') {
+                    currentInput = num;
+                } else {
+                    currentInput += num;
+                }
+            }
+            updateDisplay();
+        }
+
+        // 기호 반전 (+/-)
+        function toggleSign() {
+            if (currentInput === '0' || currentInput === 'Error') return;
+            if (currentInput.startsWith('-')) {
+                currentInput = currentInput.slice(1);
+            } else {
+                currentInput = '-' + currentInput;
+            }
+            updateDisplay();
+        }
+
+        // 사칙 연산자 입력
+        function inputOperator(op) {
+            if (currentInput === 'Error') return;
+            
+            // 직전에 계산이 완료되었다면 결과값 뒤에 이어서 연산
+            if (isCalculated) {
+                isCalculated = false;
+            }
+
+            const lastChar = formula.trim().slice(-1);
+            // 마지막 글자가 연산자이고 새로 입력된 값도 연산자일 때 대체
+            if (currentInput === '' && ['+', '-', '*', '/', '%'].includes(lastChar)) {
+                formula = formula.slice(0, -3) + ` ${op} `;
+            } else {
+                formula += `${currentInput} ${op} `;
+                currentInput = '';
+            }
+            updateDisplay();
+        }
+
+        // 공학용 기능 입력
+        function inputSci(type) {
+            if (currentInput === 'Error') currentInput = '0';
+            let val = parseFloat(currentInput) || 0;
+
+            switch(type) {
+                case 'sin':
+                    formulaDisplay.textContent = `sin(${currentInput})`;
+                    currentInput = Math.sin(val * Math.PI / 180).toFixed(8); // Degree 기준 계산
+                    break;
+                case 'cos':
+                    formulaDisplay.textContent = `cos(${currentInput})`;
+                    currentInput = Math.cos(val * Math.PI / 180).toFixed(8);
+                    break;
+                case 'tan':
+                    formulaDisplay.textContent = `tan(${currentInput})`;
+                    if (val % 90 === 0 && val % 180 !== 0) {
+                        currentInput = 'Error';
+                    } else {
+                        currentInput = Math.tan(val * Math.PI / 180).toFixed(8);
+                    }
+                    break;
+                case 'log':
+                    if (val <= 0) {
+                        currentInput = 'Error';
+                    } else {
+                        formulaDisplay.textContent = `log(${currentInput})`;
+                        currentInput = Math.log10(val).toFixed(8);
+                    }
+                    break;
+                case 'ln':
+                    if (val <= 0) {
+                        currentInput = 'Error';
+                    } else {
+                        formulaDisplay.textContent = `ln(${currentInput})`;
+                        currentInput = Math.log(val).toFixed(8);
+                    }
+                    break;
+                case 'π':
+                    currentInput = Math.PI.toFixed(8);
+                    break;
+                case 'e':
+                    currentInput = Math.E.toFixed(8);
+                    break;
+                case '^':
+                    inputOperator('^');
+                    return;
+                case '√':
+                    if (val < 0) {
+                        currentInput = 'Error';
+                    } else {
+                        formulaDisplay.textContent = `√(${currentInput})`;
+                        currentInput = Math.sqrt(val).toFixed(8);
+                    }
+                    break;
+                case '!':
+                    formulaDisplay.textContent = `fact(${currentInput})`;
+                    currentInput = factorial(val).toString();
+                    break;
+            }
+            // 소수점 아래 불필요한 0 제거
+            if (currentInput !== 'Error') {
+                currentInput = parseFloat(currentInput).toString();
+            }
+            isCalculated = true;
+            updateDisplay();
+        }
+
+        // 팩토리얼 계산기 함수
+        function factorial(n) {
+            if (n < 0 || !Number.isInteger(n)) return 'Error';
+            if (n > 170) return Infinity; // 자바스크립트 한계치 초과 예방
+            let result = 1;
+            for (let i = 2; i <= n; i++) result *= i;
+            return result;
+        }
+
+        // 글자 지우기 (⌫)
+        function deleteLast() {
+            if (isCalculated) {
+                clearAll();
+                return;
+            }
+            if (currentInput.length > 1) {
+                currentInput = currentInput.slice(0, -1);
+            } else {
+                currentInput = '0';
+            }
+            updateDisplay();
+        }
+
+        // 완전 초기화 (AC)
+        function clearAll() {
+            currentInput = '0';
+            previousInput = '';
+            formula = '';
+            isCalculated = false;
+            formulaDisplay.textContent = '';
+            updateDisplay();
+        }
+
+        // 최종 수식 계산
+        function calculate() {
+            if (formula === '' && !isCalculated) return;
+            
+            let finalExpression = formula + currentInput;
+            let displayExpression = finalExpression;
+
+            // 공학용 거듭제곱 기호(^) 처리
+            if (finalExpression.includes('^')) {
+                finalExpression = finalExpression.replace(/(\d+)\s*\^\s*(\d+)/g, 'Math.pow($1, $2)');
+            }
+
+            // 보여주기용 뷰 가다듬기 (곱셈, 나눗셈 기호 치환)
+            displayExpression = displayExpression.replace(/\*/g, '×').replace(/\//g, '÷');
+
+            try {
+                // 안전한 수식 평가를 위한 세팅
+                // 사칙 연산만 허용하도록 간단한 치환 및 안전 검사 후 eval 수행
+                let cleanExpr = finalExpression.replace(/[^0-Math.pow\d\s+\-*/%.()]/g, '');
+                let result = eval(cleanExpr);
+
+                if (result === Infinity || isNaN(result)) {
+                    currentInput = 'Error';
+                } else {
+                    // 계산 오차 보정 (부동 소수점 에러 처리)
+                    currentInput = Number(result.toFixed(10)).toString();
+                    
+                    // 계산 기록에 추가
+                    addHistory(displayExpression, currentInput);
+                }
+            } catch (err) {
+                currentInput = 'Error';
+            }
+
+            formulaDisplay.textContent = displayExpression + ' =';
+            formula = '';
+            isCalculated = true;
+            updateDisplay();
+        }
+
+        // 디스플레이 새로고침
+        function updateDisplay() {
+            // 천단위 콤마 포맷팅 (단, 소수점이 있거나 에러인 경우는 다르게 처리)
+            if (currentInput === 'Error') {
+                mainDisplay.textContent = 'Error';
+            } else {
+                let parts = currentInput.split('.');
+                parts[0] = Number(parts[0]).toLocaleString('ko-KR');
+                mainDisplay.textContent = parts.join('.');
+            }
+            
+            // 상단 수식 실시간 반영
+            if (formula !== '') {
+                formulaDisplay.textContent = formula.replace(/\*/g, '×').replace(/\//g, '÷');
+            }
+        }
+
+        // 클립보드 복사 기능 (과제 가이드에 따른 document.execCommand 우회 구현 적용)
+        function copyToClipboard() {
+            const textToCopy = currentInput;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textToCopy;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            try {
+                document.execCommand('copy');
+                showToast();
+            } catch (err) {
+                console.error('복사 실패', err);
+            }
+            document.body.removeChild(tempTextArea);
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toastMessage');
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 1500);
+        }
+
+        // 계산 기록 토글
+        function toggleHistory() {
+            const isHidden = historyContainer.classList.contains('hidden');
+            if (isHidden) {
+                historyContainer.classList.remove('hidden');
+                historyArrow.classList.add('rotate-180');
+            } else {
+                historyContainer.classList.add('hidden');
+                historyArrow.classList.remove('rotate-180');
+            }
+        }
+
+        // 계산 기록 리스트 업데이트
+        function addHistory(expr, res) {
+            histories.unshift({ expr, res });
+            if (histories.length > 20) histories.pop(); // 최대 20개 저장
+            renderHistory();
+        }
+
+        function renderHistory() {
+            if (histories.length === 0) {
+                noHistory.classList.remove('hidden');
+                clearHistoryBtn.classList.add('hidden');
+                historyList.innerHTML = '';
+                return;
+            }
+
+            noHistory.classList.add('hidden');
+            clearHistoryBtn.classList.remove('hidden');
+
+            historyList.innerHTML = histories.map((item, index) => `
+                <div onclick="loadHistory(${index})" class="flex flex-col items-end p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition text-right">
+                    <span class="text-xs text-slate-400 dark:text-slate-500">${item.expr}</span>
+                    <span class="text-sm font-bold text-slate-700 dark:text-slate-200">${Number(item.res).toLocaleString('ko-KR')}</span>
+                </div>
+            `).join('');
+        }
+
+        // 클릭 시 기록 가져오기
+        function loadHistory(index) {
+            const selected = histories[index];
+            currentInput = selected.res;
+            formulaDisplay.textContent = selected.expr + ' =';
+            isCalculated = true;
+            updateDisplay();
+        }
+
+        // 계산 기록 전체 삭제
+        function clearHistory() {
+            histories = [];
+            renderHistory();
+        }
+
+        // 키보드 입력 매핑
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            if (key >= '0' && key <= '9') {
+                inputNum(key);
+            } else if (key === '.') {
+                inputNum('.');
+            } else if (key === '+' || key === '-' || key === '*' || key === '/' || key === '%') {
+                inputOperator(key);
+            } else if (key === 'Enter' || key === '=') {
+                calculate();
+            } else if (key === 'Backspace') {
+                deleteLast();
+            } else if (key === 'Escape') {
+                clearAll();
+            }
+        });
+
+    </script>
+</body>
+</html>
